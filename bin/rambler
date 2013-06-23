@@ -1,0 +1,149 @@
+#!/usr/bin/env node
+
+var optimist = require('optimist'),
+	dns = require('dns'),
+	fs = require('fs'),
+	util = require('util'),
+	SpiderWeb = require('spider-web'),
+	dnsLookup = dns.lookup,
+	urls = [],
+	domains = [],
+	excludeUrls = [],
+	argv = require('optimist')
+			.usage('Usage: $0 -u [url]')
+			.demand(['u'])
+			.describe('u', 'url to crawl')
+			.alias ('url', 'u')
+			.describe('e', 'exclude url, supports "*" wild card')
+			.alias('exclude', 'e')
+			.describe('d', 'override the ip of a domain, format is "domain:ip"')
+			.alias ('domain', 'd')
+			.describe('t', 'timeout in seconds, default is 60')
+			.alias('timeout', 't')
+			.describe('o', 'Output file'),
+			.alias('output', 'o')
+			.describe('h', 'help, show this message')
+			.alias ('help', 'h')
+			.argv,
+	ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+	options = {
+		excludeNoFollow: false
+	};
+
+
+if (argv.h) {
+	help();
+}
+
+init();
+run();
+
+/**
+ * Override DNS Lookup
+ **/
+
+dns.lookup = function(domain) {
+	var i;
+
+	for (i = 0; i < domains.length; i++) {
+		if (domain.match(domains[i].name)) {
+			console.log('yes');
+			return arguments[arguments.length - 1](null, domains[i].record);
+		}
+	}
+
+	dnsLookup.apply(this, arguments);
+}
+
+
+function init() {
+	var domain, d, u, i,
+		excludeUrls;
+
+	d = argv.d;
+	if (d) {
+		if (!Array.isArray(d)) {
+			d = [d];
+		}
+
+		for (i = 0; i < d.length; i++) {
+			domain = d[i].split(':');
+
+			if (domain[0].length) {
+
+				if (!ipRegex.test(domain[1])) {
+					console.log('Invalid ip address: ', domain[1]);
+					process.exit();
+				}
+
+				if (domain.length === 2) {
+					domains.push({
+						domain: domain[0],
+						record: [
+							null,
+							domain[1],
+							4
+						]
+					});
+				}
+			}
+		}
+	}
+
+	u = argv.u;
+
+	if (u) {
+		if (!Array.isArray(u)) {
+			u = [u];
+		}
+
+		urls = u;
+	}
+
+	if (!urls || !urls.length) {
+		help();
+	}
+
+	if (argv.e) {
+		excludeUrls = argv.e;
+		if (!Array.isArray(excludeUrls)) {
+			excludeUrls = [excludeUrls];
+		}
+
+		options.excludeUrls = excludeUrls;
+	}
+
+	if (argv.t) {
+		options.timeout = parseFloat(argv.t) * 1000;
+	}
+}
+
+function run() {
+	var spider = new SpiderWeb(urls, options);
+	spider.start(function(err, log) {
+		var file, url;
+
+		if (log.length) {
+			console.log('DONE: ' + log.length + ' errors: ' + file);
+			if (argv.o) {
+				fs.writeFileSync(argv.o, util.inspect(log, false, 10));
+			}
+			else {
+				console.log(util.inspect(log, false, 10));	
+			}
+		}
+		else {
+			console.log('DONE: no errors');
+		}
+	});
+
+	spider.pageHandler = function(err, resp, body, entry) {
+		console.log(entry.url);
+		SpiderWeb.prototype.pageHandler.apply(this, arguments);
+	}
+}
+
+function help() {
+	optimist.showHelp(console.log);
+	process.exit();
+}
