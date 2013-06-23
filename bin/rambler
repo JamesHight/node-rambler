@@ -2,6 +2,7 @@
 
 var optimist = require('optimist'),
 	dns = require('dns'),
+	net = require('net'),
 	fs = require('fs'),
 	util = require('util'),
 	SpiderWeb = require('spiderweb'),
@@ -25,7 +26,6 @@ var optimist = require('optimist'),
 			.describe('h', 'help, show this message')
 			.alias ('help', 'h')
 			.argv,
-	ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
 	options = {
 		excludeNoFollow: false
 	};
@@ -42,17 +42,34 @@ run();
  * Override DNS Lookup
  **/
 if (domains.length) {
-	dns.lookup = function(domain) {
+	dns.lookup = function(domain, family, callback) {
 		var i;
 
-		for (i = 0; i < domains.length; i++) {
-			if (domain.match(domains[i].name)) {
-				console.log('yes');
-				return arguments[arguments.length - 1](null, domains[i].record);
+		if (arguments.length === 2) {
+			callback = family;
+			family = 0;
+		} 
+		else if (!family) {
+			family = 0;
+		} 
+		else {
+			family = +family;
+			if (family !== 4 && family !== 6) {
+				throw new Error('invalid argument: `family` must be 4 or 6');
 			}
 		}
 
-		dnsLookup.apply(this, arguments);
+		for (i = 0; i < domains.length; i++) {
+			if (domain.match(domains[i].domain) 
+				&& ((family !== 4 && family !== 6) 
+					 || domains[i].family === family)) {
+				if (callback) {
+					return callback(null, domains[i].ip, family);
+				}			
+			}
+		}
+
+		return dnsLookup.call(this, domain, family, callback);
 	}
 }
 
@@ -70,24 +87,28 @@ function init() {
 		for (i = 0; i < d.length; i++) {
 			domain = d[i].split(':');
 
-			if (domain[0].length) {
-
-				if (!ipRegex.test(domain[1])) {
-					console.log('Invalid ip address: ', domain[1]);
-					process.exit();
-				}
-
-				if (domain.length === 2) {
-					domains.push({
-						domain: domain[0],
-						record: [
-							null,
-							domain[1],
-							4
-						]
-					});
-				}
+			if (domain.length !== 2) {
+				console.log('Invalid DNS argument: ' + d[i]);
+				help();
 			}
+
+			domain = {
+				domain:domain[0],
+				ip: domain[1]
+			};
+
+			if (net.isIPv4(domain.ip)) {
+				domain.family = 4;
+			}
+			else if (net.isIPv6(domain.ip)) {
+				domain.family = 6;
+			}
+			else {
+				console.log('Invalid ip: ' + domain.ip);
+				help();
+			}
+
+			domains.push(domain);
 		}
 	}
 
