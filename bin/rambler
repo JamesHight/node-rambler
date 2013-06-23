@@ -4,7 +4,7 @@ var optimist = require('optimist'),
 	dns = require('dns'),
 	fs = require('fs'),
 	util = require('util'),
-	SpiderWeb = require('spider-web'),
+	SpiderWeb = require('spiderweb'),
 	dnsLookup = dns.lookup,
 	urls = [],
 	domains = [],
@@ -20,7 +20,7 @@ var optimist = require('optimist'),
 			.alias ('domain', 'd')
 			.describe('t', 'timeout in seconds, default is 60')
 			.alias('timeout', 't')
-			.describe('o', 'Output file'),
+			.describe('o', 'Output file')
 			.alias('output', 'o')
 			.describe('h', 'help, show this message')
 			.alias ('help', 'h')
@@ -41,18 +41,19 @@ run();
 /**
  * Override DNS Lookup
  **/
+if (domains.length) {
+	dns.lookup = function(domain) {
+		var i;
 
-dns.lookup = function(domain) {
-	var i;
-
-	for (i = 0; i < domains.length; i++) {
-		if (domain.match(domains[i].name)) {
-			console.log('yes');
-			return arguments[arguments.length - 1](null, domains[i].record);
+		for (i = 0; i < domains.length; i++) {
+			if (domain.match(domains[i].name)) {
+				console.log('yes');
+				return arguments[arguments.length - 1](null, domains[i].record);
+			}
 		}
-	}
 
-	dnsLookup.apply(this, arguments);
+		dnsLookup.apply(this, arguments);
+	}
 }
 
 
@@ -124,7 +125,7 @@ function run() {
 		var file, url;
 
 		if (log.length) {
-			console.log('DONE: ' + log.length + ' errors: ' + file);
+			console.log('DONE: ' + log.length + ' errors');
 			if (argv.o) {
 				fs.writeFileSync(argv.o, util.inspect(log, false, 10));
 			}
@@ -137,8 +138,9 @@ function run() {
 		}
 	});
 
-	spider.pageHandler = function(err, resp, body, entry) {
+	spider.pageHandler = function(err, resp, body, entry) {		
 		console.log(entry.url);
+		
 		SpiderWeb.prototype.pageHandler.apply(this, arguments);
 	}
 }
