@@ -7,7 +7,7 @@ Installation
 ------------
 
 ````bash
-	npm install -g rambler
+npm install -g rambler
 ````
 
 Usage:
