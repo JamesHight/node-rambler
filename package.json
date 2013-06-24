@@ -1,6 +1,6 @@
 {
   "name": "rambler",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Walk a website checking for bad links",
   "bin": {
     "rambler": "bin/rambler"
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/JamesHight/node-rambler"
+    "url": "https://github.com/JamesHight/node-rambler.git"
   },
   "keywords": [
     "integrity",
