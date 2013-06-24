@@ -20,7 +20,6 @@ ramber -h
 # Walk a website
 rambler -u http://example.com
 
-# Override the IP address for a domain by doing evil things to 
-# the core dns library.
+# Override the IP address for a domain 
 rambler -u http://example.com -d example.com:1.2.3.4
 ````
