@@ -1,14 +1,11 @@
 #!/usr/bin/env node
 
 var optimist = require('optimist'),
-	dns = require('dns'),
-	net = require('net'),
+	evilDns = require('evil-dns'),
 	fs = require('fs'),
 	util = require('util'),
 	SpiderWeb = require('spiderweb'),
-	dnsLookup = dns.lookup,
 	urls = [],
-	domains = [],
 	excludeUrls = [],
 	argv = require('optimist')
 			.usage('Usage: $0 -u [url]')
@@ -38,41 +35,6 @@ if (argv.h) {
 init();
 run();
 
-/**
- * Override DNS Lookup
- **/
-if (domains.length) {
-	dns.lookup = function(domain, family, callback) {
-		var i;
-
-		if (arguments.length === 2) {
-			callback = family;
-			family = 0;
-		} 
-		else if (!family) {
-			family = 0;
-		} 
-		else {
-			family = +family;
-			if (family !== 4 && family !== 6) {
-				throw new Error('invalid argument: `family` must be 4 or 6');
-			}
-		}
-
-		for (i = 0; i < domains.length; i++) {
-			if (domain.match(domains[i].domain) 
-				&& ((family !== 4 && family !== 6) 
-					 || domains[i].family === family)) {
-				if (callback) {
-					return callback(null, domains[i].ip, family);
-				}			
-			}
-		}
-
-		return dnsLookup.call(this, domain, family, callback);
-	}
-}
-
 
 function init() {
 	var domain, d, u, i,
@@ -92,23 +54,13 @@ function init() {
 				help();
 			}
 
-			domain = {
-				domain:domain[0],
-				ip: domain[1]
-			};
-
-			if (net.isIPv4(domain.ip)) {
-				domain.family = 4;
+			try {
+				evilDns.add(domain[0], domain[1]);
 			}
-			else if (net.isIPv6(domain.ip)) {
-				domain.family = 6;
-			}
-			else {
-				console.log('Invalid ip: ' + domain.ip);
+			catch(e) {
+				console.log('Error: ', e);
 				help();
 			}
-
-			domains.push(domain);
 		}
 	}
 
