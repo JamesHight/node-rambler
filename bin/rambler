@@ -37,7 +37,8 @@ run();
 
 
 function init() {
-	var domain, d, u, i,
+	var urlRegexp = /^https?:\/\//,
+		domain, d, u, i,
 		excludeUrls;
 
 	d = argv.d;
@@ -69,6 +70,12 @@ function init() {
 	if (u) {
 		if (!Array.isArray(u)) {
 			u = [u];
+		}
+
+		for (i = 0; i < u.length; i++) {
+			if (!urlRegexp.test(u[i])) {
+				u[i] = 'http://' + u[i];
+			}
 		}
 
 		urls = u;
