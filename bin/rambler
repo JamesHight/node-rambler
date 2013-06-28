@@ -25,7 +25,8 @@ var optimist = require('optimist'),
 			.argv,
 	options = {
 		excludeNoFollow: false
-	};
+	},
+	spider;
 
 
 if (argv.h) {
@@ -100,7 +101,7 @@ function init() {
 }
 
 function run() {
-	var spider = new SpiderWeb(urls, options);
+	spider = new SpiderWeb(urls, options);
 	spider.start(function(err, log) {
 		var file, url;
 
@@ -129,3 +130,8 @@ function help() {
 	optimist.showHelp(console.log);
 	process.exit();
 }
+
+
+process.on( 'SIGINT', function() {
+	spider.end();
+});
