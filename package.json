@@ -1,6 +1,6 @@
 {
   "name": "rambler",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Walk a website checking for bad links",
   "bin": {
     "rambler": "bin/rambler"
@@ -22,7 +22,12 @@
     "spider"
   ],
   "author": "James Hight",
-  "license": "Apache 2",
+  "licenses": [
+    {
+      "type": "Apache 2.0",
+      "url": "https://github.com/JamesHight/node-rambler/blob/master/LICENSE"
+    }
+  ],
   "readmeFilename": "README.md",
   "bugs": {
     "url": "https://github.com/JamesHight/node-rambler/issues"
