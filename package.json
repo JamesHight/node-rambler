@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "optimist": "~0.5.2",
-    "spiderweb": "0.0.12",
+    "spiderweb": "0.0.14",
     "evil-dns": "0.0.1"
   }
 }
